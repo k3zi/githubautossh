@@ -10,12 +10,13 @@ Gem::Specification.new do |spec|
   spec.email         = ["me@kez.io"]
 
   spec.summary       = "A helper script to automatically create the proper SSH credentials"
+  spec.description   = "A helper script that generates both public & private keys, uploads them to the specified Github repository (as deploy keys), and adds them to your ssh config file."
   spec.homepage      = "https://github.com/k3zi/githubautossh"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = ["githubautossh"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "github_api", "~> 0.13.1"
