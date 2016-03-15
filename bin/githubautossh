@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+
+require 'githubautossh'
+require 'ssh-config'
+require 'highline'
+require 'net/ssh'
+require 'uri'
+
+cli = HighLine.new
+
+print "Enter the Github URL of the repository: "
+STDOUT.flush
+github_url = gets.chomp
+
+uri = URI.parse(github_url)
+splitPaths = uri.path.split('/')
+
+username = splitPaths[1]
+repo = splitPaths[2]
+
+print "Enter the username to access the above repo: "
+STDOUT.flush
+loginUsername = gets.chomp
+
+loginPassword = cli.ask("Enter the password to access the above repo: ") { |q| q.echo = false }
+
+Github.configure do |c|
+    c.basic_auth = loginUsername + ":" + loginPassword
+    c.user = username
+    c.repo = repo
+end
+
+key = OpenSSL::PKey::RSA.generate(2048)
+type = key.ssh_type
+data = [key.to_blob].pack('m0')
+
+public_key_string = "#{type} #{data}"
+private_key_string = key.to_pem
+
+def push_key(username, repo, pubKey, privKey, otp)
+    begin
+        Github.configure do |c|
+          c.connection_options = {headers: {"X-GitHub-OTP" => otp}}
+        end
+
+        keys = Github::Client::Repos::Keys.new
+        randomString = [*('A'..'Z')].sample(8).join
+        name = ["github", username, repo, randomString].join('_')
+        create = keys.create username, repo,
+            title: name,
+            key:  pubKey
+
+        saveDirectory = Dir.home + "/.ssh/"
+
+        f = File.open(saveDirectory + name + ".pub", "w+")
+        f.write pubKey
+
+        f = File.open(saveDirectory + name, "w+")
+        f.write privKey
+
+        File.open(saveDirectory + "config", "a")
+        ssh_config = ConfigFile.new
+        settings = [name, "HostName", "github.com"]
+        ssh_config.set!(*settings)
+        settings = [name, "IdentityFile", saveDirectory + name]
+        ssh_config.set!(*settings)
+
+        puts
+        puts "Congrats! Your public/private key pair has been generated!"
+        puts "     Public Key: " + saveDirectory + name + ".pub"
+        puts "     Private Key: " + saveDirectory + name
+
+    rescue Github::Error::GithubError => e
+        if e.message.include? "OTP"
+            print "Enter your two-faxtor OTP code: "
+            STDOUT.flush
+            otp = gets.chomp
+            push_key(username, repo, pubKey, privKey, otp)
+        else
+            puts e.message
+        end
+    end
+end
+
+push_key(username, repo, public_key_string, private_key_string, "")
