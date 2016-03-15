@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Kesi Maduka"]
   spec.email         = ["me@kez.io"]
 
-  spec.summary       = "A helper script to automatically create the proper SSH credentials"
+  spec.summary       = "A helper script to automatically create the proper SSH credentials for Github"
   spec.description   = "A helper script that generates both public & private keys, uploads them to the specified Github repository (as deploy keys), and adds them to your ssh config file."
   spec.homepage      = "https://github.com/k3zi/githubautossh"
   spec.license       = "MIT"
